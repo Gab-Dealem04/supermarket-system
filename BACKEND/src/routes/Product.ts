@@ -64,5 +64,41 @@ router.get('/:id', async(req, res) => {
 
 //atualizar produto
 router.put('/:id', async(req, res) => {
+    try{
+        const existing = await prisma.product.findUnique({
+            where: { id: req.params.id },
+        });
+        if(!existing){
+            return res.status(404).json({ error: 'Produto não encontrado'});
+        }
+        const { name, price, barcode, internalCode, stock } = req.body ?? {};
+        const product = await prisma.product.update({
+            where: { id: req.params.id },
+            data: { name, price, barcode, internalCode, stock },
+        });
+        res.json(product);
+    }catch(error: any){
+        if (error.code === 'P2002'){
+            return res.status(409).json({ error: 'Código de barras ou código interno já cadastrado' });
+        }
+        res.status(400).json({ error: 'Erro ao atualizar produto' });
+    }
+});
 
-})
+router.delete('/:id', async (req, res) => {
+  try {
+    const existing = await prisma.product.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!existing)
+      return res.status(404).json({ error: 'Produto não encontrado' });
+ 
+    await prisma.product.delete({ where: { id: req.params.id } });
+    res.json({ message: 'Produto deletado com sucesso' });
+  } catch (error: any) {
+    if (error.code === 'P2003')
+      return res.status(409).json({ error: 'Produto já usado em vendas e não pode ser apagado' });
+    res.status(500).json({ error: 'Erro ao deletar produto' });
+  }
+});
+
