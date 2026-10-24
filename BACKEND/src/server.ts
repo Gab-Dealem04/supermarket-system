@@ -1,7 +1,10 @@
-import app from "./app";
+import app from './app.js';
+import { connectDB } from './lib/prisma.js';
 
-const PORT = 3000;
+const port = process.env.PORT || 8080;
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`Servidor rodando na porta ${port}`);
+  });
 });

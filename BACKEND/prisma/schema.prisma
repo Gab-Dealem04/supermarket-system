@@ -8,9 +8,9 @@ datasource db {
 }
 
 enum Role {
-  OPERATOR  // Operador de Caixa
-  MANAGER   // Gerente/Supervisor
-  ADMIN     // Administrador
+  OPERATOR  
+  MANAGER   
+  ADMIN     
 }
 
 enum ShiftStatus {
@@ -19,20 +19,20 @@ enum ShiftStatus {
 }
 
 enum MovementType {
-  SUPPLY   // Suprimento
-  BLEED    // Sangria
+  SUPPLY   
+  BLEED    
 }
 
 enum SaleStatus {
-  OPEN       // Aberto (Carrinho)
-  COMPLETED  // Concluída
-  CANCELED   // Cancelada
+  OPEN       
+  COMPLETED  
+  CANCELED   
 }
 
 enum PaymentMethod {
-  CASH   // Dinheiro
-  CARD   // Cartão (Débito/Crédito)
-  PIX    // Pix
+  CASH   
+  CARD   
+  PIX    
 }
 
 model User {
@@ -40,13 +40,11 @@ model User {
   name            String
   password        String
   role            Role           @default(OPERATOR)
-  
-  // Relacionamentos
-  shifts          Shift[]        // Turnos que operou
-  sales           Sale[]         // Vendas realizadas
-  authorizations  AuditLog[]     // Operações críticas que este usuário (gerente) autorizou
-  cashMovements   CashMovement[] // Suprimentos e sangrias registrados
-
+  shifts          Shift[]        
+  sales           Sale[]        
+  authorizations  AuditLog[]     
+  cashMovements   CashMovement[] 
+  active Boolean @default(true)
   createdAt       DateTime       @default(now())
 }
 
@@ -54,14 +52,11 @@ model Shift {
   id              String         @id @default(uuid())
   operatorId      String
   operator        User           @relation(fields: [operatorId], references: [id])
-  
-  initialAmount   Decimal        @db.Decimal(10, 2) // Fundo de troco (Abertura)
-  declaredAmount  Decimal?       @db.Decimal(10, 2) // Valor declarado pelo operador (Fechamento)
+  initialAmount   Decimal        @db.Decimal(10, 2) 
+  declaredAmount  Decimal?       @db.Decimal(10, 2) 
   status          ShiftStatus    @default(OPEN)
-  
   openedAt        DateTime       @default(now())
   closedAt        DateTime?
-  
   sales           Sale[]
   movements       CashMovement[]
 }
@@ -70,14 +65,11 @@ model CashMovement {
   id          String       @id @default(uuid())
   shiftId     String
   shift       Shift        @relation(fields: [shiftId], references: [id])
-  
-  userId      String       // Operador que registrou
+  userId      String      
   user        User         @relation(fields: [userId], references: [id])
-  
   type        MovementType
   amount      Decimal      @db.Decimal(10, 2)
-  reason      String?      // Motivo exigido para Sangria
-  
+  reason      String?      
   createdAt   DateTime     @default(now())
 }
 
@@ -86,9 +78,8 @@ model Product {
   name          String
   barcode       String?    @unique
   internalCode  String?    @unique
-  price         Decimal    @db.Decimal(10, 2) // 10 dígitos no total, 2 casas decimais
+  price         Decimal    @db.Decimal(10, 2) 
   stock         Int        @default(0)
-  
   saleItems     SaleItem[]
 }
 
@@ -96,18 +87,14 @@ model Sale {
   id            String       @id @default(uuid())
   shiftId       String
   shift         Shift        @relation(fields: [shiftId], references: [id])
-  
   operatorId    String
   operator      User         @relation(fields: [operatorId], references: [id])
-  
   status        SaleStatus   @default(OPEN)
   totalAmount   Decimal      @default(0) @db.Decimal(10, 2)
-  discount      Decimal      @default(0) @db.Decimal(10, 2) // Desconto total na venda
+  discount      Decimal      @default(0) @db.Decimal(10, 2) 
   finalAmount   Decimal      @default(0) @db.Decimal(10, 2)
-  
   items         SaleItem[]
   payments      Payment[]
-  
   createdAt     DateTime     @default(now()) // Timestamp da venda
 }
 
@@ -115,15 +102,12 @@ model SaleItem {
   id            String     @id @default(uuid())
   saleId        String
   sale          Sale       @relation(fields: [saleId], references: [id])
-  
   productId     String
   product       Product    @relation(fields: [productId], references: [id])
-  
   quantity      Int
   unitPrice     Decimal    @db.Decimal(10, 2)
-  discount      Decimal    @default(0) @db.Decimal(10, 2) // Desconto específico no item
-  
-  totalPrice    Decimal    @db.Decimal(10, 2) // (quantity * unitPrice) - discount
+  discount      Decimal    @default(0) @db.Decimal(10, 2)
+  totalPrice    Decimal    @db.Decimal(10, 2) 
 }
 
 model Payment {
@@ -132,17 +116,15 @@ model Payment {
   sale          Sale          @relation(fields: [saleId], references: [id])
   
   method        PaymentMethod
-  amount        Decimal       @db.Decimal(10, 2) // Valor pago nesta modalidade
+  amount        Decimal       @db.Decimal(10, 2) 
 }
 
 model AuditLog {
   id            String     @id @default(uuid())
-  action        String     // Ex: "CANCELAMENTO_VENDA", "SANGRIA", "CANCELAMENTO_ITEM"
+  action        String     
   details       String?
-  
-  managerId     String     // Gerente que autorizou
+  managerId     String     
   manager       User       @relation(fields: [managerId], references: [id])
-  
-  referenceId   String?    // ID da venda, item ou movimentação afetada
+  referenceId   String?    
   createdAt     DateTime   @default(now())
 }
